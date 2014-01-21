@@ -83,7 +83,7 @@ class @AutoComplete
     , 500
 
   onItemClick: (doc, e) =>
-    @replace doc[@rules[@matched].field]
+    @replace doc, @rules[@matched]
     @hideList()
 
   onItemHover: (doc, e) ->
@@ -95,7 +95,7 @@ class @AutoComplete
     return false unless docId # Don't select if nothing matched
 
     rule = @rules[@matched]
-    @replace rule.collection.findOne(docId)[rule.field]
+    @replace rule.collection.findOne(docId), rule
     @hideList()
     return true
 
@@ -124,13 +124,22 @@ class @AutoComplete
     Session.set("-autocomplete-id", prevId)
 
   # Replace the appropriate region
-  replace: (replacement) ->
+  replace: (item, rule) ->
+    replacement = item[if rule.insertField then rule.insertField else rule.field];
     startpos = @$element.getCursorPosition()
     fullStuff = @getText()
     val = fullStuff.substring(0, startpos)
-    val = val.replace(@expressions[@matched], "$1" + @rules[@matched].token + replacement)
+    val = val.replace(@expressions[@matched], "$1" + rule.token + replacement)
     posfix = fullStuff.substring(startpos, fullStuff.length)
-    separator = (if posfix.match(/^\s/) then "" else " ")
+
+    if not rule.appendString?
+      separator = (if posfix.match(/^\s/) then "" else " ")
+    else
+      if rule.appendString
+        separator = rule.appendString
+      else
+        separator = ''
+
     finalFight = val + separator + posfix
     @setText finalFight
     @$element.setCursorPosition val.length + 1
